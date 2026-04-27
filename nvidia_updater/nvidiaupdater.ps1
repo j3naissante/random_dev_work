@@ -12,29 +12,29 @@ try {
 
 $html = $response.Content
 
-# STEP 1: Extract ALL version numbers from the table
+#Extracts version numbers from aspx site
 $versions = [regex]::Matches($html, "\d+\.\d{2,3}") | ForEach-Object { $_.Value }
 
 if (-not $versions -or $versions.Count -eq 0) {
     throw "No driver versions found on NVIDIA page"
 }
 
-# STEP 2: Pick Game Ready version
+#Picks correct version
 $Version = $versions[0]
 
 Write-Host "Detected version: $Version"
 
-# STEP 3: Builds download URL
+#Builds download URL
 $DownloadUrl = "https://us.download.nvidia.com/Windows/$Version/$Version-desktop-win10-win11-64bit-international-dch-whql.exe"
 
 Write-Output "Download URL: $DownloadUrl"
 
-# STEP 4: Validate URL format
+#Validates URL format
 if ($DownloadUrl -notmatch "^https://us\.download\.nvidia\.com/Windows/\d+\.\d+/") {
     throw "Invalid NVIDIA download URL generated"
 }
 
-# STEP 5: Download
+#Downloading
 $OutFile = "$env:TEMP\nvidia-driver-$Version.exe"
 
 try {
