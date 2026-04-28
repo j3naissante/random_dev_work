@@ -93,7 +93,7 @@ Write-Output "Using PFID: $pfid"
 
 
 # Build NVIDIA URL
-$ProcessUrl = "https://www.nvidia.com/Download/processFind.aspx?dtcid=1&osid=$osid&pfid=$pfid&whql=1"
+$ProcessUrl = "https://www.nvidia.com/Download/processFind.aspx?dtcid=1&osid=$osid&pfid=$pfid&whql=1%22"
 
 $response = Invoke-WebRequest -Uri $ProcessUrl -UseBasicParsing -ErrorAction Stop
 $html = $response.Content
