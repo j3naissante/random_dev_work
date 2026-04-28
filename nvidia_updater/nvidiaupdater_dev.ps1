@@ -1,7 +1,6 @@
 # Built by j3naissante
 # Data from https://github.com/ZenitH-AT/nvidia-data/
 
-
 Write-Output "Updating Nvidia Driver"
 
 
@@ -32,6 +31,7 @@ else {
 
 Write-Output "Detected OS: $($os.Caption)"
 Write-Output "Using OSID: $osid"
+
 
 # GPU → PFID mapping
 $pfidMap = @{
@@ -99,7 +99,7 @@ $response = Invoke-WebRequest -Uri $ProcessUrl -UseBasicParsing -ErrorAction Sto
 $html = $response.Content
 
 
-#Extracts version numbers from aspx site
+# Extracts version numbers from aspx site
 $versions = [regex]::Matches($html, "\b\d{3}\.\d{2,3}\b") |
             ForEach-Object { $_.Value } |
             Select-Object -Unique
@@ -108,7 +108,7 @@ if (-not $versions -or $versions.Count -eq 0) {
     throw "No driver versions found on NVIDIA page (PFID/OS combination may be invalid)"
 }
 
-#Picks correct version
+# Picks correct version
 $Version = $versions |
     Sort-Object { [version]$_ } -Descending |
     Select-Object -First 1
@@ -116,13 +116,36 @@ $Version = $versions |
 Write-Output "Detected latest version: $Version"
 
 
-#Builds download URL
+# Check currently installed driver version from registry
+$RegPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}_Display.Driver"
+$InstalledVersion = $null
+
+if (Test-Path $RegPath) {
+    $InstalledVersion = (Get-ItemProperty -Path $RegPath -Name "DisplayVersion" -ErrorAction SilentlyContinue).DisplayVersion
+}
+
+if ($InstalledVersion) {
+    Write-Output "Currently installed driver version: $InstalledVersion"
+
+    if ($InstalledVersion -eq $Version) {
+        Write-Output "Driver version $Version is already installed. No update required. Exiting."
+        exit 0
+    }
+
+    Write-Output "Installed version ($InstalledVersion) differs from latest ($Version). Proceeding with update."
+}
+else {
+    Write-Output "No existing NVIDIA driver found in registry. Proceeding with installation."
+}
+
+
+# Builds download URL
 $DownloadUrl = "https://us.download.nvidia.com/Windows/$Version/$Version-desktop-win10-win11-64bit-international-dch-whql.exe"
 
 Write-Output "Download URL: $DownloadUrl"
 
 
-#Validates URL format
+# Validates URL format
 if ($DownloadUrl -notmatch "^https://us\.download\.nvidia\.com/Windows/\d+\.\d+/") {
     throw "Invalid NVIDIA download URL generated"
 }
@@ -131,6 +154,34 @@ if ($DownloadUrl -notmatch "^https://us\.download\.nvidia\.com/Windows/\d+\.\d+/
 # Downloads driver
 $OutFile = "$env:TEMP\nvidia-driver-$Version.exe"
 
+Write-Output "Downloading driver to: $OutFile"
 Invoke-WebRequest -Uri $DownloadUrl -OutFile $OutFile -ErrorAction Stop
+Write-Output "Download complete."
 
-Write-Output "Download complete: $OutFile"
+
+# Silent installation
+# -s  = silent
+# -noreboot = suppress automatic reboot (Datto RMM manages reboots)
+# -noeula   = skip EULA prompt
+# -clean    = clean install (removes previous driver components)
+Write-Output "Starting silent installation..."
+
+$InstallArgs = "-s -noreboot -noeula -clean"
+$InstallProcess = Start-Process -FilePath $OutFile -ArgumentList $InstallArgs -Wait -PassThru
+
+$ExitCode = $InstallProcess.ExitCode
+
+switch ($ExitCode) {
+    0       { Write-Output "Driver installed successfully (Exit code: 0)." }
+    1       { throw "Installation failed — general error (Exit code: 1)." }
+    2       { throw "Installation failed — invalid parameter (Exit code: 2)." }
+    14      { Write-Output "Installation complete — reboot required (Exit code: 14)." }
+    default { throw "Installation returned unexpected exit code: $ExitCode" }
+}
+
+
+# Cleanup installer
+Remove-Item -Path $OutFile -Force -ErrorAction SilentlyContinue
+Write-Output "Installer cleaned up."
+
+Write-Output "NVIDIA driver update complete. Version: $Version"
