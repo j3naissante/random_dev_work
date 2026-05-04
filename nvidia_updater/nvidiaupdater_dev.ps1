@@ -159,14 +159,9 @@ Invoke-WebRequest -Uri $DownloadUrl -OutFile $OutFile -ErrorAction Stop
 Write-Output "Download complete."
 
 
-# Silent installation
-# -s  = silent
-# -noreboot = suppress automatic reboot (Datto RMM manages reboots)
-# -noeula   = skip EULA prompt
-# -clean    = clean install (removes previous driver components)
 Write-Output "Starting silent installation..."
 
-$InstallArgs = "-s -noreboot -noeula -clean"
+$InstallArgs = "-s -n"
 $InstallProcess = Start-Process -FilePath $OutFile -ArgumentList $InstallArgs -Wait -PassThru
 
 $ExitCode = $InstallProcess.ExitCode
