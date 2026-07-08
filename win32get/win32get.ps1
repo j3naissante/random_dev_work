@@ -18,9 +18,6 @@ function New-SafeFolderName {
 function Get-SoftwareShortName {
     param([string]$PackageId)
 
-    # Brave.Brave -> brave
-    # Google.Chrome -> google
-    # VideoLAN.VLC -> videolan
 
     $firstPart = ($PackageId -split '\.')[0]
     $safeName = $firstPart.ToLower()
