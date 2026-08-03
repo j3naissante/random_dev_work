@@ -229,11 +229,11 @@ function Get-WingetPath {
     `$windowsAppsPath = "C:\Program Files\WindowsApps"
 
     if (Test-Path `$windowsAppsPath) {
-        `$winget = Get-ChildItem `
-            -Path `$windowsAppsPath `
-            -Filter "winget.exe" `
-            -Recurse `
-            -File `
+        `$winget = Get-ChildItem ``
+            -Path `$windowsAppsPath ``
+            -Filter "winget.exe" ``
+            -Recurse ``
+            -File ``
             -ErrorAction SilentlyContinue |
             Where-Object {
                 `$_.FullName -like "*Microsoft.DesktopAppInstaller*"
@@ -262,19 +262,19 @@ function Install-WingetBootstrap {
 
     Write-Host "Downloading winget/App Installer..."
 
-    Invoke-WebRequest `
-        -Uri "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx" `
-        -OutFile `$vcLibs `
+    Invoke-WebRequest ``
+        -Uri "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx" ``
+        -OutFile `$vcLibs ``
         -UseBasicParsing
 
-    Invoke-WebRequest `
-        -Uri "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.7/Microsoft.UI.Xaml.2.8.x64.appx" `
-        -OutFile `$uiXaml `
+    Invoke-WebRequest ``
+        -Uri "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.7/Microsoft.UI.Xaml.2.8.x64.appx" ``
+        -OutFile `$uiXaml ``
         -UseBasicParsing
 
-    Invoke-WebRequest `
-        -Uri "https://aka.ms/getwinget" `
-        -OutFile `$appInstaller `
+    Invoke-WebRequest ``
+        -Uri "https://aka.ms/getwinget" ``
+        -OutFile `$appInstaller ``
         -UseBasicParsing
 
     Write-Host "Installing dependencies..."
@@ -314,11 +314,11 @@ function Install-WingetBootstrap {
         `$dependencyPackages += `$uiXaml
     }
 
-    Add-AppxProvisionedPackage `
-        -Online `
-        -PackagePath `$appInstaller `
-        -DependencyPackagePath `$dependencyPackages `
-        -SkipLicense `
+    Add-AppxProvisionedPackage ``
+        -Online ``
+        -PackagePath `$appInstaller ``
+        -DependencyPackagePath `$dependencyPackages ``
+        -SkipLicense ``
         -ErrorAction Stop |
         Out-Null
 
@@ -350,15 +350,19 @@ Write-Host `$wingetPath
 
 Write-Host "Installing `$PackageId using machine scope..."
 
-& `$wingetPath install `
-    --id "`$PackageId" `
-    --exact `
-    --source winget `
-    --scope machine `
-    --silent `
-    --accept-package-agreements `
-    --accept-source-agreements `
-    --disable-interactivity
+`$installArguments = @(
+    "install"
+    "--id", "`$PackageId"
+    "--exact"
+    "--source", "winget"
+    "--scope", "machine"
+    "--silent"
+    "--accept-package-agreements"
+    "--accept-source-agreements"
+    "--disable-interactivity"
+)
+
+& `$wingetPath @installArguments
 
 `$installExitCode = `$LASTEXITCODE
 
@@ -369,11 +373,7 @@ Write-Host "Verifying installation with winget list..."
 Start-Sleep -Seconds 5
 
 `$listResult = @(
-    & `$wingetPath list `
-        --id "`$PackageId" `
-        --exact `
-        --accept-source-agreements `
-        --disable-interactivity 2>`$null
+    & `$wingetPath list --id "`$PackageId" --exact --accept-source-agreements --disable-interactivity 2>`$null
 )
 
 `$listExitCode = `$LASTEXITCODE
